@@ -31,8 +31,23 @@ jobs:
           black --check .
           isort --check-only .
 
-      - name: Tests
-        run: pytest -q
+      - name: Run tests
+        run: pytest -q --maxfail=1 --disable-warnings
+
+      - name: Start server and collect metrics
+        run: |
+          nohup python -m uvicorn app.main:app --port 8000 --reload &
+          sleep 3
+          echo ">>> Collecting metrics"
+          curl -s http://localhost:8000/metrics | tee metrics.json
+          echo ">>> Metrics collected:"
+          cat metrics.json
+
+      - name: Upload metrics artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: metrics
+          path: metrics.json
 
       - name: Pre-commit (all files)
         run: pre-commit run --all-files

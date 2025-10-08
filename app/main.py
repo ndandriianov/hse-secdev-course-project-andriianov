@@ -1,7 +1,32 @@
+import time
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 app = FastAPI(title="SecDev Course App", version="0.1.0")
+
+response_times = []
+
+
+@app.middleware("http")
+async def response_time_middleware(request: Request, call_next):
+    """Middleware для измерения времени отклика"""
+    start_time = time.time()
+    
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    process_time_ms = round(process_time * 1000, 2)
+    
+    response_times.append({
+        "path": request.url.path,
+        "method": request.method,
+        "status_code": response.status_code,
+        "response_time_ms": process_time_ms,
+        "timestamp": time.time()
+    })
+    
+    response.headers["X-Response-Time"] = f"{process_time_ms}ms"
+    
+    return response
 
 
 class ApiError(Exception):
@@ -32,6 +57,42 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/metrics")
+def get_metrics():
+    """Эндпоинт для получения метрик времени отклика"""
+    if not response_times:
+        return {"message": "Нет данных о времени отклика"}
+    
+    times = [rt["response_time_ms"] for rt in response_times]
+    
+    avg_time = round(sum(times) / len(times), 2)
+    max_time = max(times)
+    min_time = min(times)
+    
+    status_counts = {}
+    for rt in response_times:
+        status = rt["status_code"]
+        status_counts[status] = status_counts.get(status, 0) + 1
+    
+    endpoint_counts = {}
+    for rt in response_times:
+        endpoint = f"{rt['method']} {rt['path']}"
+        endpoint_counts[endpoint] = endpoint_counts.get(endpoint, 0) + 1
+    
+    return {
+        "total_requests": len(response_times),
+        "response_time_stats": {
+            "avg_ms": avg_time,
+            "max_ms": max_time,
+            "min_ms": min_time,
+            "requests_over_200ms": len([t for t in times if t > 200])
+        },
+        "status_codes": status_counts,
+        "endpoints": endpoint_counts,
+        "recent_requests": response_times[-10:]
+    }
 
 
 # Example minimal entity (for tests/demo)
