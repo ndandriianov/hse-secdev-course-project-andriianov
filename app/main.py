@@ -1,4 +1,6 @@
 import time
+from collections import defaultdict
+from typing import Dict, List
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -55,6 +57,37 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         status_code=exc.status_code,
         content={"error": {"code": "http_error", "message": detail}},
     )
+
+
+RATE_LIMIT_STORE: Dict[str, List[float]] = defaultdict(list)
+MAX_REQUESTS = 5
+TIME_WINDOW_SECONDS = 60
+
+
+def get_client_ip(request: Request) -> str:
+    """Получает IP-адрес клиента для простого Rate Limiting."""
+    return request.client.host if request.client else "unknown"
+
+
+def rate_limit_dependency(request: Request):
+    """Зависимость FastAPI для проверки лимита запросов."""
+    ip = get_client_ip(request)
+    current_time = time.time()
+
+    window_start = current_time - TIME_WINDOW_SECONDS
+    RATE_LIMIT_STORE[ip] = [t for t in RATE_LIMIT_STORE[ip] if t >= window_start]
+
+    if len(RATE_LIMIT_STORE[ip]) >= MAX_REQUESTS:
+        time_to_wait = int(
+            TIME_WINDOW_SECONDS - (current_time - RATE_LIMIT_STORE[ip][0])
+        )
+        raise ApiError(
+            code="rate_limit",
+            message=f"Too many requests. Try again in {time_to_wait} seconds.",
+            status=429,
+        )
+
+    RATE_LIMIT_STORE[ip].append(current_time)
 
 
 @app.get("/health")
