@@ -18,9 +18,9 @@ graph TD
     end
     
     subgraph Data ["Граница: Data Boundary (Postgres/Redis)"]
-        D1["OKR Data (Postgres)"]
-        D2["Auth Cache/DB (Tokens, Brute-Force)"]
-        D3["Audit Log Store"]
+        D1["D1: OKR Data (Postgres)"]
+        D2["D2: Auth Cache/DB (Tokens, Brute-Force)"]
+        D3["D3: Audit Log Store"]
     end
     
     %% -----------------------------------------------------
