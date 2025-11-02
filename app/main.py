@@ -1,21 +1,51 @@
+import logging
 import time
+import uuid
 from collections import defaultdict
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 app = FastAPI(title="SecDev Course App", version="0.1.0")
 
+logger = logging.getLogger("secdev_app")
+logger.setLevel(logging.INFO)
+
 response_times = []
+
+
+def mask_secret(value: str) -> str:
+    if not value:
+        return value
+    if len(value) > 8:
+        return value[:4] + "*" * (len(value) - 4)
+    return "****"
 
 
 @app.middleware("http")
 async def response_time_middleware(request: Request, call_next):
-    """Middleware для измерения времени отклика"""
+    """Middleware для измерения времени отклика и установки correlation_id."""
     start_time = time.time()
 
-    response = await call_next(request)
+    correlation_id = request.headers.get("X-Correlation-ID") or str(uuid.uuid4())
+    request.state.correlation_id = correlation_id
+
+    try:
+        response = await call_next(request)
+    except Exception as exc:
+        logger.exception("Unhandled error (correlation_id=%s): %s", correlation_id, exc)
+        return JSONResponse(
+            status_code=500,
+            content={
+                "type": "about:blank",
+                "title": "Internal Server Error",
+                "status": 500,
+                "detail": "An internal error occurred. Contact support with correlation_id",
+                "correlation_id": correlation_id,
+            },
+        )
+
     process_time = time.time() - start_time
     process_time_ms = round(process_time * 1000, 2)
 
@@ -26,36 +56,75 @@ async def response_time_middleware(request: Request, call_next):
             "status_code": response.status_code,
             "response_time_ms": process_time_ms,
             "timestamp": time.time(),
+            "correlation_id": correlation_id,
         }
     )
 
     response.headers["X-Response-Time"] = f"{process_time_ms}ms"
+    response.headers["X-Correlation-ID"] = correlation_id
 
     return response
 
 
 class ApiError(Exception):
-    def __init__(self, code: str, message: str, status: int = 400):
+    def __init__(
+        self,
+        code: str,
+        message: str,
+        status: int = 400,
+        correlation_id: Optional[str] = None,
+    ):
         self.code = code
         self.message = message
         self.status = status
+        self.correlation_id = correlation_id
 
 
 @app.exception_handler(ApiError)
 async def api_error_handler(request: Request, exc: ApiError):
+    correlation_id = (
+        getattr(request.state, "correlation_id", None)
+        or exc.correlation_id
+        or str(uuid.uuid4())
+    )
+    safe_message = mask_secret(exc.message)
+    logger.info(
+        "ApiError handled (correlation_id=%s): code=%s message=%s",
+        correlation_id,
+        exc.code,
+        safe_message,
+    )
     return JSONResponse(
         status_code=exc.status,
-        content={"error": {"code": exc.code, "message": exc.message}},
+        content={
+            "type": "about:blank",
+            "title": exc.code.replace("_", " ").title(),
+            "status": exc.status,
+            "detail": exc.message,  # сюда оставляем полное сообщение для клиента
+            "correlation_id": correlation_id,
+        },
     )
 
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
-    # Normalize FastAPI HTTPException into our error envelope
+    correlation_id = getattr(request.state, "correlation_id", None) or str(uuid.uuid4())
+    logger.info(
+        "HTTPException (correlation_id=%s): status=%s detail=%s",
+        correlation_id,
+        exc.status_code,
+        exc.detail,
+    )
     detail = exc.detail if isinstance(exc.detail, str) else "http_error"
     return JSONResponse(
         status_code=exc.status_code,
-        content={"error": {"code": "http_error", "message": detail}},
+        content={
+            "type": "about:blank",
+            "title": "Http Error",
+            "status": exc.status_code,
+            "detail": detail,
+            "correlation_id": correlation_id,
+        },
     )
 
 
@@ -81,10 +150,12 @@ def rate_limit_dependency(request: Request):
         time_to_wait = int(
             TIME_WINDOW_SECONDS - (current_time - RATE_LIMIT_STORE[ip][0])
         )
+        correlation_id = getattr(request.state, "correlation_id", None)
         raise ApiError(
             code="rate_limit",
             message=f"Too many requests. Try again in {time_to_wait} seconds.",
             status=429,
+            correlation_id=correlation_id,
         )
 
     RATE_LIMIT_STORE[ip].append(current_time)
