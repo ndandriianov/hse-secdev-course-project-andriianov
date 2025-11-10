@@ -1,12 +1,14 @@
 from datetime import datetime, timedelta
 from typing import Optional
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from passlib.context import CryptContext
 from jose import JWTError, jwt
+from passlib.context import CryptContext
 from sqlmodel import Session, select
-from app.models import User
+
 from app.database import get_session
+from app.models import User
 
 SECRET_KEY = "CHANGE_THIS_SECRET_IN_PRODUCTION"
 ALGORITHM = "HS256"
@@ -19,6 +21,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 # Password utils
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
+
 
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
@@ -37,6 +40,7 @@ def get_user_by_username(session: Session, username: str) -> Optional[User]:
     statement = select(User).where(User.username == username)
     return session.exec(statement).first()
 
+
 def authenticate_user(session: Session, username: str, password: str) -> Optional[User]:
     user = get_user_by_username(session, username)
     if not user or not verify_password(password, user.hashed_password):
@@ -46,8 +50,7 @@ def authenticate_user(session: Session, username: str, password: str) -> Optiona
 
 # Current user dependency
 async def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    session: Session = Depends(get_session)
+    token: str = Depends(oauth2_scheme), session: Session = Depends(get_session)
 ) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,

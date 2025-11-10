@@ -19,9 +19,7 @@ def test_env_example_present_and_env_ignored_in_gitignore():
     with open(gitignore, "r", encoding="utf-8") as f:
         gi = f.read()
 
-    assert re.search(
-        r"(^|/)\.env($|\s|#)", gi, re.MULTILINE
-    ), ".env should be in .gitignore"
+    assert re.search(r"(^|/)\.env($|\s|#)", gi, re.MULTILINE), ".env should be in .gitignore"
 
 
 def test_logs_do_not_contain_raw_secrets(caplog):
@@ -33,6 +31,4 @@ def test_logs_do_not_contain_raw_secrets(caplog):
     logger.info("BUGGY: secret=%s", mask_secret(secret_value))
 
     all_logs = "\n".join(r.getMessage() for r in caplog.records)
-    assert (
-        secret_value not in all_logs
-    ), "raw secret leaked into logs; logs must mask secrets"
+    assert secret_value not in all_logs, "raw secret leaked into logs; logs must mask secrets"
