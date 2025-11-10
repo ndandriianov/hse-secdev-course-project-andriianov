@@ -10,16 +10,19 @@ services:
       - "8000:8000"
     depends_on:
       - db
+    env_file:
+      - .env.example
     environment:
-      DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/postgres
       PYTHONUNBUFFERED: 1
 
   db:
     image: postgres:15
+    env_file:
+      - .env.example
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
     ports:
       - "5432:5432"
     volumes:

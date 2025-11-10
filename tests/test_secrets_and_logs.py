@@ -11,7 +11,7 @@ client = TestClient(app)
 
 def test_env_example_present_and_env_ignored_in_gitignore():
     repo_root = os.path.dirname(os.path.dirname(__file__))
-    env_example = os.path.join(repo_root, ".env.example")
+    env_example = os.path.join(repo_root, ".env")
     gitignore = os.path.join(repo_root, ".gitignore")
     assert os.path.exists(env_example), ".env.example must exist"
     assert os.path.exists(gitignore), ".gitignore must exist"

@@ -22,7 +22,7 @@ from app.models import (
     UserCreate,
     default_period_templates,
 )
-from app.schemas.validation import ValidatedObjectiveCreate, ValidatedKeyResultCreate
+from app.schemas.validation import ValidatedKeyResultCreate, ValidatedObjectiveCreate
 
 router = APIRouter()
 

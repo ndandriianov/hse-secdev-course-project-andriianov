@@ -24,6 +24,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         instance=str(request.url),
     )
 
+
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     errors = {}

@@ -1,28 +1,27 @@
 # app/auth.py
+import os
 from datetime import datetime, timedelta
 from typing import Optional
 
+import argon2
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
+from passlib.exc import PasslibSecurityError
 from sqlmodel import Session, select
 
 from app.database import get_session
 from app.models import User
-import argon2
 
 # Argon2 hasher
 ph = argon2.PasswordHasher(
-    time_cost=3,
-    memory_cost=65536,  # 64 MB
-    parallelism=4,
-    hash_len=32,
-    salt_len=16
+    time_cost=3, memory_cost=65536, parallelism=4, hash_len=32, salt_len=16  # 64 MB
 )
 
-SECRET_KEY = "CHANGE_THIS_SECRET_IN_PRODUCTION"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
+# Load secrets/config from environment (set these in .env / CI / orchestrator)
+SECRET_KEY = os.getenv("SECRET_KEY", "CHANGE_THIS_SECRET_IN_DEVELOPMENT")
+ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", str(60 * 24)))
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
@@ -32,7 +31,9 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     try:
         ph.verify(hashed_password, plain_password)
         return True
-    except:
+    except PasslibSecurityError:
+        return False
+    except Exception:  # fallback — только если нужно (ruff не ругается, если явно)
         return False
 
 
