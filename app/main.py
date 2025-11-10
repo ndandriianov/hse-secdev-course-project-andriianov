@@ -12,9 +12,19 @@ app.add_exception_handler(ProblemException, problem_exception_handler)
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
+    status_titles = {
+        400: "Bad Request",
+        401: "Unauthorized",
+        403: "Forbidden",
+        404: "Not Found",
+        422: "Unprocessable Entity",
+        429: "Too Many Requests",
+        500: "Internal Server Error",
+    }
+    title = status_titles.get(exc.status_code, "Error")
     raise ProblemException(
         status_code=exc.status_code,
-        title=exc.detail.split(" - ")[0] if " - " in exc.detail else "Error",
+        title=title,
         detail=exc.detail,
         type=(
             "https://api.okr.example.com/probs/unauthorized"
