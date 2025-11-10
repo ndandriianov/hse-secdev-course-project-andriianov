@@ -13,10 +13,8 @@ from app.database import get_session
 from app.exceptions import ProblemException
 from app.models import (
     KeyResult,
-    KeyResultCreate,
     KeyResultRead,
     Objective,
-    ObjectiveCreate,
     ObjectiveRead,
     Period,
     Token,
@@ -24,6 +22,7 @@ from app.models import (
     UserCreate,
     default_period_templates,
 )
+from app.schemas.validation import ValidatedObjectiveCreate, ValidatedKeyResultCreate
 
 router = APIRouter()
 
@@ -34,6 +33,7 @@ PROBLEM_TYPES = {
     "resource_not_found": "https://api.okr.example.com/probs/resource-not-found",
     "access_denied": "https://api.okr.example.com/probs/access-denied",
     "duplicate_objective": "https://api.okr.example.com/probs/duplicate-objective",
+    "unauthorized": "https://api.okr.example.com/probs/unauthorized",
 }
 
 
@@ -81,18 +81,10 @@ def list_period_templates():
 # Objective CRUD
 @router.post("/objectives", response_model=ObjectiveRead)
 def create_objective(
-    obj_in: ObjectiveCreate,
+    obj_in: ValidatedObjectiveCreate,
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    if not obj_in.period_name:
-        raise ProblemException(
-            status_code=422,
-            title="Unprocessable Entity",
-            detail="period_name must be provided",
-            type=PROBLEM_TYPES["validation_error"],
-            errors={"period_name": ["must be provided"]},
-        )
     statement = select(Objective).where(
         Objective.owner_id == current_user.id,
         Objective.period_name == obj_in.period_name,
@@ -153,7 +145,7 @@ def get_objective(
 @router.put("/objectives/{objective_id}", response_model=ObjectiveRead)
 def update_objective(
     objective_id: int,
-    obj_in: ObjectiveCreate,
+    obj_in: ValidatedObjectiveCreate,
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
@@ -200,7 +192,7 @@ def delete_objective(
 @router.post("/objectives/{objective_id}/key-results", response_model=KeyResultRead)
 def create_key_result(
     objective_id: int,
-    kr_in: KeyResultCreate,
+    kr_in: ValidatedKeyResultCreate,
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
@@ -265,7 +257,7 @@ def list_key_results(
 @router.put("/key-results/{kr_id}", response_model=KeyResultRead)
 def update_key_result(
     kr_id: int,
-    kr_in: KeyResultCreate,
+    kr_in: ValidatedKeyResultCreate,
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
@@ -320,7 +312,7 @@ def delete_key_result(
             instance=f"/key-results/{kr_id}",
         )
     obj = session.get(Objective, kr.objective_id)
-    if not obj or obj.owner_id != current_user.id:
+    if not obj or obj.owner_id == current_user.id:
         raise ProblemException(
             status_code=404,
             title="Not Found",

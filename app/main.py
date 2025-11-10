@@ -1,5 +1,6 @@
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 
 from app.database import create_db_and_tables
 from app.exceptions import ProblemException, problem_exception_handler
@@ -21,6 +22,23 @@ async def http_exception_handler(request: Request, exc: HTTPException):
             else "about:blank"
         ),
         instance=str(request.url),
+    )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    errors = {}
+    for err in exc.errors():
+        field = " -> ".join(str(x) for x in err["loc"] if x != "__root__")
+        msg = err["msg"]
+        errors.setdefault(field or "body", []).append(msg)
+
+    raise ProblemException(
+        status_code=422,
+        title="Unprocessable Entity",
+        detail="Validation failed",
+        type="https://api.okr.example.com/probs/validation-error",
+        instance=str(request.url),
+        errors=errors,
     )
 
 

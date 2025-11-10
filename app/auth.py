@@ -1,30 +1,43 @@
+# app/auth.py
 from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from sqlmodel import Session, select
 
 from app.database import get_session
 from app.models import User
+import argon2
+
+# Argon2 hasher
+ph = argon2.PasswordHasher(
+    time_cost=3,
+    memory_cost=65536,  # 64 MB
+    parallelism=4,
+    hash_len=32,
+    salt_len=16
+)
 
 SECRET_KEY = "CHANGE_THIS_SECRET_IN_PRODUCTION"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
 
 # Password utils
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        ph.verify(hashed_password, plain_password)
+        return True
+    except:
+        return False
 
 
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    return ph.hash(password)
 
 
 # Token utils
