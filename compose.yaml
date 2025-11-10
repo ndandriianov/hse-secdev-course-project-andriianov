@@ -1,8 +1,32 @@
+version: "3.9"
+
 services:
-  app:
+  web:
     build: .
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    volumes:
+      - .:/app
     ports:
       - "8000:8000"
+    depends_on:
+      - db
+    env_file:
+      - .env.example
     environment:
-      - PYTHONUNBUFFERED=1
-    profiles: ["dev"]
+      PYTHONUNBUFFERED: 1
+
+  db:
+    image: postgres:15
+    env_file:
+      - .env.example
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
