@@ -2,6 +2,7 @@ FROM python:3.11.11-slim AS builder
 
 WORKDIR /app
 
+# hadolint ignore=DL3008
 RUN apt-get update && \
     apt-get install -y --no-install-recommends gcc build-essential && \
     rm -rf /var/lib/apt/lists/*
@@ -15,6 +16,7 @@ RUN useradd -m app
 
 WORKDIR /app
 
+# hadolint ignore=DL3008
 RUN apt-get update && \
     apt-get install -y --no-install-recommends curl && \
     rm -rf /var/lib/apt/lists/*
