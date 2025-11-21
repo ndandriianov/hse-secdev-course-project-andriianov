@@ -56,3 +56,12 @@ jobs:
         uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: Dockerfile
+
+      - name: Run Trivy filesystem scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          vuln-type: os,library
+          format: table
+          severity: CRITICAL,HIGH,MEDIUM
+          ignore-unfixed: false
