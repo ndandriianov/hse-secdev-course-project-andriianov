@@ -1,58 +1,68 @@
 name: CI
+
 on:
-  pull_request:
   push:
     branches: [main]
+  pull_request:
+
 permissions:
   contents: read
+  pull-requests: write
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
+    env:
+      PYTHON_VERSION: "3.11"
+
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-          cache: "pip"
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt -r requirements-dev.txt
 
-      - name: Lint & Format
+      - name: Pre-commit checks
+        run: pre-commit run --all-files --show-diff-on-failure
+
+      - name: Lint with Ruff
+        run: ruff check .
+
+      - name: Format check (Black + isort)
         run: |
-          ruff check --output-format=github .
-          black --check .
-          isort --check-only .
+          black --check --diff .
+          isort --check --diff .
 
-      - name: Run tests
-        run: pytest -q --maxfail=1 --disable-warnings
-
-      - name: Start server and collect metrics
+      - name: Test with pytest + coverage
         run: |
-          nohup python -m uvicorn app.main:app --port 8000 --reload &
-          sleep 3
-          echo ">>> Collecting metrics"
-          curl -s http://localhost:8000/metrics | tee metrics.json
-          echo ">>> Metrics collected:"
-          cat metrics.json
+          pytest --cov=app --cov-report=xml --cov-report=term-missing -q
 
-      - name: Upload metrics artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: metrics
-          path: metrics.json
+      - name: Build package
+        run: |
+          python -m pip install build
+          python -m build
 
-      - name: Pre-commit (all files)
-        run: pre-commit run --all-files
+      - name: Start server & collect metrics
+        run: |
+          nohup uvicorn app.main:app --port 8000 --host 0.0.0.0 &
+          sleep 5
+          curl -f http://localhost:8000/health || exit 1
+          curl -s http://localhost:8000/metrics > metrics.txt
 
-      - name: Install Hadolint
+      - name: Hadolint
         uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: Dockerfile
@@ -61,7 +71,24 @@ jobs:
         uses: aquasecurity/trivy-action@0.28.0
         with:
           scan-type: fs
-          vuln-type: os,library
           format: table
           severity: CRITICAL,HIGH,MEDIUM
           ignore-unfixed: false
+
+      - name: Upload coverage to Codecov (optional but awesome)
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            dist/*.whl
+            dist/*.tar.gz
+            coverage.xml
+            metrics.txt
+            htmlcov/
+          retention-days: 7
