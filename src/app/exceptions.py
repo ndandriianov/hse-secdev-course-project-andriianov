@@ -3,7 +3,7 @@ from typing import Any, Optional
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
-from app.schemas.problem import ProblemDetails
+from src.app.schemas.problem import ProblemDetails
 
 
 class ProblemException(Exception):

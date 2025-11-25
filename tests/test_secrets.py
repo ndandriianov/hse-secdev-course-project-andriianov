@@ -3,7 +3,7 @@ from importlib import reload
 
 from fastapi.testclient import TestClient
 
-from app.main import app
+from src.app.main import app
 
 client = TestClient(app)
 
@@ -11,11 +11,11 @@ client = TestClient(app)
 def test_secret_key_is_loaded_from_env():
     os.environ["SECRET_KEY"] = "custom-test-secret-xyz"
 
-    import app.auth
+    import src.app.auth
 
-    reload(app.auth)
+    reload(src.app.auth)
 
-    from app.auth import SECRET_KEY
+    from src.app import SECRET_KEY
 
     assert SECRET_KEY == "custom-test-secret-xyz"
 
@@ -23,11 +23,11 @@ def test_secret_key_is_loaded_from_env():
 def test_default_secret_is_used_when_not_set(monkeypatch):
     monkeypatch.delenv("SECRET_KEY", raising=False)
 
-    import app.auth
+    import src.app.auth
 
-    reload(app.auth)
+    reload(src.app.auth)
 
-    from app.auth import SECRET_KEY
+    from src.app import SECRET_KEY
 
     assert SECRET_KEY == "CHANGE_THIS_SECRET_IN_DEVELOPMENT"
 
