@@ -15,7 +15,7 @@ def test_secret_key_is_loaded_from_env():
 
     reload(src.app.auth)
 
-    from src.app import SECRET_KEY
+    from src.app.auth import SECRET_KEY
 
     assert SECRET_KEY == "custom-test-secret-xyz"
 
@@ -27,7 +27,7 @@ def test_default_secret_is_used_when_not_set(monkeypatch):
 
     reload(src.app.auth)
 
-    from src.app import SECRET_KEY
+    from src.app.auth import SECRET_KEY
 
     assert SECRET_KEY == "CHANGE_THIS_SECRET_IN_DEVELOPMENT"
 
