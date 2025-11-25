@@ -1,1 +1,24 @@
-waivers: []
+waivers:
+  - id: WAIVER-2025-002
+    status: approved
+    package: pydantic
+    current_version: 2.9.2
+    vulnerability:
+      id: CVE-2025-99999
+      source: GHSA-xxxx-xxxx-xxxx
+      severity: High
+    justification: >
+      Уязвимость затрагивает только Windows при использовании
+      pydantic с валидацией email через validator email-validator>=2.0.0.
+      В проекте используется pydantic[email] на Linux-контейнерах,
+      email-validator не установлен, вектор эксплуатации отсутствует.
+    mitigations:
+      - type: environment
+        details: Приложение работает только в Linux-контейнерах (Docker)
+      - type: dependency
+        details: email-validator не входит в зависимости
+    owner: security@team.local
+    expires: 2025-12-31
+    evidence:
+      report: EVIDENCE/P09/sca_report.json
+      summary: EVIDENCE/P09/sca_summary.md
