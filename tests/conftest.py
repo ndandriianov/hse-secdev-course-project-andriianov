@@ -7,8 +7,8 @@ import pytest
 from httpx import AsyncClient
 from sqlmodel import SQLModel
 
-from src.app.database import engine
-from src.app.main import app
+from src import engine
+from src import app
 
 
 @pytest.fixture(scope="session", autouse=True)
