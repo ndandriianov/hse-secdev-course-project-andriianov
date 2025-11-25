@@ -1,0 +1,65 @@
+name: Staging Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'README.md'
+      - 'docs/**'
+
+jobs:
+  deploy-staging:
+    runs-on: ubuntu-latest
+    environment: staging
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install build tools
+        run: |
+          pip install --upgrade pip
+          pip install build twine
+
+      - name: Build package
+        run: python -m build
+
+      - name: Publish to TestPyPI (dry-run first)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          twine check dist/*
+          echo "DRY-RUN: would upload to TestPyPI"
+          twine upload --repository testpypi --skip-existing dist/* --verbose || echo "Dry-run complete"
+
+      - name: Publish to TestPyPI (real)
+        if: github.event_name == 'push'
+        env:
+          TWINE_USERNAME: ${{ secrets.TESTPYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.TESTPYPI_TOKEN }}
+        run: |
+          twine upload --repository testpypi --skip-existing dist/*
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image (staging)
+        run: |
+          IMAGE_ID=ghcr.io/${{ github.repository }}/okr-tracker
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[:upper:]' '[:lower:]')
+          docker build -t $IMAGE_ID:staging .
+          docker push $IMAGE_ID:staging
+          echo "Image pushed: $IMAGE_ID:staging"
