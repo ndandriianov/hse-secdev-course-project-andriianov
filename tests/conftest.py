@@ -4,11 +4,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import pytest
-from httpx import AsyncClient
-from sqlmodel import SQLModel
-
 from app.database import engine
 from app.main import app
+from httpx import AsyncClient
+from sqlmodel import SQLModel
 
 
 @pytest.fixture(scope="session", autouse=True)

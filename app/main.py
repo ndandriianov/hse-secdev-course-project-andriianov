@@ -1,10 +1,9 @@
 import uvicorn
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.exceptions import RequestValidationError
-
 from app.database import create_db_and_tables
 from app.exceptions import ProblemException, problem_exception_handler
 from app.routes import router as api_router
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 
 app = FastAPI(title="OKR Tracker")
 app.add_exception_handler(ProblemException, problem_exception_handler)

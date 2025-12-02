@@ -4,14 +4,13 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 import argon2
+from app.database import get_session
+from app.models import User
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.exc import PasslibSecurityError
 from sqlmodel import Session, select
-
-from app.database import get_session
-from app.models import User
 
 # Argon2 hasher
 ph = argon2.PasswordHasher(

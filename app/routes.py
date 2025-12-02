@@ -3,11 +3,6 @@ import csv
 import io
 from typing import List
 
-from fastapi import APIRouter, Depends, Query
-from fastapi.responses import Response
-from fastapi.security import OAuth2PasswordRequestForm
-from sqlmodel import Session, select
-
 from app.auth import authenticate_user, create_access_token, get_current_user, get_password_hash
 from app.database import get_session
 from app.exceptions import ProblemException
@@ -23,6 +18,10 @@ from app.models import (
     default_period_templates,
 )
 from app.schemas.validation import ValidatedKeyResultCreate, ValidatedObjectiveCreate
+from fastapi import APIRouter, Depends, Query
+from fastapi.responses import Response
+from fastapi.security import OAuth2PasswordRequestForm
+from sqlmodel import Session, select
 
 router = APIRouter()
 

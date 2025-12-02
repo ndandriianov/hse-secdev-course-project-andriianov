@@ -1,9 +1,8 @@
 from typing import Any, Optional
 
+from app.schemas.problem import ProblemDetails
 from fastapi import Request
 from fastapi.responses import JSONResponse
-
-from app.schemas.problem import ProblemDetails
 
 
 class ProblemException(Exception):
