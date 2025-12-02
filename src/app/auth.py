@@ -10,8 +10,8 @@ from jose import JWTError, jwt
 from passlib.exc import PasslibSecurityError
 from sqlmodel import Session, select
 
-from app.database import get_session
-from app.models import User
+from src.app.database import get_session
+from src.app.models import User
 
 # Argon2 hasher
 ph = argon2.PasswordHasher(
