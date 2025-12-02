@@ -16,6 +16,8 @@ asyncio_mode = "auto"
 
 [build-system]
 requires = ["setuptools>=65.5", "wheel"]
+name = "hse-secdev-course-project-andriianov"
+version = "0.1.0"
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
