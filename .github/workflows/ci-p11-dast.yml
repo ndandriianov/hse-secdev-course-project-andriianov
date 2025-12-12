@@ -37,10 +37,9 @@ jobs:
           pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-      # TODO: адаптируйте запуск под ваш сервис
       - name: Run app
         run: |
-          uvicorn app.main:app --host 0.0.0.0 --port 8080 &
+          uvicorn src.app.main:app --host 0.0.0.0 --port 8080 &
           timeout 30 bash -c 'until curl -sf http://localhost:8080/healthz; do sleep 1; done'
 
       - name: ZAP Baseline
