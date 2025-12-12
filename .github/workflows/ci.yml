@@ -38,14 +38,6 @@ jobs:
       - name: Pre-commit checks
         run: pre-commit run --all-files --show-diff-on-failure
 
-      - name: Lint with Ruff
-        run: ruff check .
-
-      - name: Format check (Black + isort)
-        run: |
-          black --check --diff .
-          isort --check --diff .
-
       - name: Test with pytest + coverage
         run: |
           pytest --cov=src.app --cov-report=xml --cov-report=term-missing -q
