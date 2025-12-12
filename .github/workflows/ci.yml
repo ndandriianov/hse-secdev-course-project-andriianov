@@ -59,7 +59,7 @@ jobs:
         run: |
           nohup uvicorn src.app.main:app --port 8000 --host 0.0.0.0 &
           sleep 5
-          curl -f http://localhost:8000/health || exit 1
+          curl -f http://localhost:8000/healthz || exit 1
           curl -s http://localhost:8000/metrics > metrics.txt
 
       - name: Hadolint
