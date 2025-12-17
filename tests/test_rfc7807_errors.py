@@ -23,7 +23,7 @@ def test_validation_error_rfc7807_format():
 
 
 def test_successful_response_not_rfc7807():
-    response = client.get("/health")
+    response = client.get("/healthz")
     assert response.status_code == 200
     data = response.json()
     assert "type" not in data

@@ -406,6 +406,6 @@ def objective_report(
 
 
 # Health check
-@router.get("/health")
-def health():
+@router.get("/healthz")
+def healthz():
     return {"status": "ok"}
