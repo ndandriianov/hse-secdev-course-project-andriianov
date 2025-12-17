@@ -48,10 +48,15 @@ jobs:
 
       - name: Trivy image scan
         run: |
-          docker run --rm -v $PWD:/work aquasec/trivy \
-            image app:local \
-              --format json \
-              --output /work/EVIDENCE/P12/trivy_report.json || true
+          docker save app:local -o /tmp/app_local.tar
+
+          docker run --rm \
+            -v /tmp:/tmp \
+            -v $PWD:/work \
+            aquasec/trivy \
+            image --input /tmp/app_local.tar \
+            --format json \
+            --output /work/EVIDENCE/P12/trivy_report.json || echo '{"error": "trivy_scan_failed"}' > /work/EVIDENCE/P12/trivy_report.json
 
       - name: Upload P12 evidence
         if: always()
